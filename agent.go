@@ -55,7 +55,7 @@ func (a *Agent) Chat(ctx context.Context, params ChatParams) (*ChatInvocationRes
 	}
 
 	var resp ChatInvocationResponse
-	path := fmt.Sprintf("agents/%s/chat", a.ID)
+	path := fmt.Sprintf("v1/agents/%s/chat", a.ID)
 	if err := a.client.doJSON(ctx, "POST", path, body, &resp); err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func isThreadNotFound(err error) bool {
 
 // ListThreads returns a paginated list of threads for this agent.
 func (a *Agent) ListThreads(ctx context.Context, params *ThreadListParams) (*ThreadListResponse, error) {
-	path := fmt.Sprintf("agents/%s/threads", a.ID)
+	path := fmt.Sprintf("v1/agents/%s/threads", a.ID)
 	if params != nil {
 		q := url.Values{}
 		if params.ID != "" {

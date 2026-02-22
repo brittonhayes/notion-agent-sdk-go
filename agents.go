@@ -13,7 +13,7 @@ type AgentOperations struct {
 
 // List returns a paginated list of agents.
 func (a *AgentOperations) List(ctx context.Context, params *AgentListParams) (*AgentListResponse, error) {
-	path := "agents"
+	path := "v1/agents"
 	if params != nil {
 		q := url.Values{}
 		if params.Name != "" {

@@ -16,7 +16,7 @@ type Thread struct {
 
 // Get retrieves this thread's details.
 func (t *Thread) Get(ctx context.Context) (*ThreadListItem, error) {
-	path := fmt.Sprintf("agents/%s/threads?id=%s", t.AgentID, url.QueryEscape(t.ThreadID))
+	path := fmt.Sprintf("v1/agents/%s/threads?id=%s", t.AgentID, url.QueryEscape(t.ThreadID))
 
 	var resp ThreadListResponse
 	if err := t.client.doJSON(ctx, "GET", path, nil, &resp); err != nil {
@@ -38,7 +38,7 @@ func (t *Thread) Poll(ctx context.Context, opts *PollThreadOptions) (*ThreadList
 
 // ListMessages returns a paginated list of messages in this thread.
 func (t *Thread) ListMessages(ctx context.Context, params *ThreadMessageListParams) (*ThreadMessageListResponse, error) {
-	path := fmt.Sprintf("threads/%s/messages", t.ThreadID)
+	path := fmt.Sprintf("v1/threads/%s/messages", t.ThreadID)
 	if params != nil {
 		q := url.Values{}
 		if params.Verbose != nil {
