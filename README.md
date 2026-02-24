@@ -2,6 +2,8 @@
 
 A Go client for interacting with Notion Agents via the Notion Agents API.
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/brittonhayes/notion-agent-sdk-go.svg)](https://pkg.go.dev/github.com/brittonhayes/notion-agent-sdk-go)
+
 > **Disclaimer**: This is an **unofficial**, community-maintained SDK and is not affiliated with or endorsed by Notion. It is maintained on a best-effort basis.
 
 Status: **Alpha**
