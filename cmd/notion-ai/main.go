@@ -12,12 +12,36 @@ import (
 )
 
 func main() {
+	// Handle subcommands before flag parsing.
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "login":
+			if err := runLogin(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		case "logout":
+			if err := runLogout(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		case "status":
+			if err := runStatus(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		}
+	}
+
 	agentFlag := flag.String("agent", "", "agent ID to connect to on startup")
 	flag.Parse()
 
-	token := os.Getenv("NOTION_API_TOKEN")
-	if token == "" {
-		fmt.Fprintln(os.Stderr, "NOTION_API_TOKEN environment variable is required")
+	token, err := resolveToken()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
