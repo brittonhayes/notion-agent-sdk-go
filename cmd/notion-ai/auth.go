@@ -50,8 +50,82 @@ func credentialsPath() (string, error) {
 	return filepath.Join(configDir, configDirName, credentialsFileName), nil
 }
 
-// loadCredentials reads stored OAuth credentials from disk.
+// loadCredentials reads stored OAuth credentials.
+// It tries the OS keychain first, then falls back to the config file.
 func loadCredentials() (*credentials, error) {
+	if keychainAvailable() {
+		data, err := keychainLoad()
+		if err == nil && data != "" {
+			var creds credentials
+			if err := json.Unmarshal([]byte(data), &creds); err != nil {
+				return nil, fmt.Errorf("parsing keychain credentials: %w", err)
+			}
+			return &creds, nil
+		}
+	}
+
+	return loadCredentialsFile()
+}
+
+// saveCredentials stores OAuth credentials.
+// It tries the OS keychain first, then falls back to the config file.
+func saveCredentials(creds *credentials) error {
+	data, err := json.Marshal(creds)
+	if err != nil {
+		return fmt.Errorf("encoding credentials: %w", err)
+	}
+
+	if keychainAvailable() {
+		if err := keychainStore(string(data)); err == nil {
+			// Clean up any leftover file-based credentials.
+			_ = deleteCredentialsFile()
+			return nil
+		}
+		// Fall through to file storage on keychain failure.
+		fmt.Fprintln(os.Stderr, "Warning: could not store in OS keychain, falling back to file")
+	}
+
+	return saveCredentialsFile(creds)
+}
+
+// deleteCredentials removes stored credentials from both keychain and file.
+func deleteCredentials() error {
+	var errs []string
+
+	if keychainAvailable() {
+		if err := keychainDelete(); err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+
+	if err := deleteCredentialsFile(); err != nil {
+		errs = append(errs, err.Error())
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("deleting credentials: %s", strings.Join(errs, "; "))
+	}
+	return nil
+}
+
+// credentialBackend returns a human-readable name for where credentials are stored.
+func credentialBackend() string {
+	if keychainAvailable() {
+		switch runtime.GOOS {
+		case "darwin":
+			return "macOS Keychain"
+		case "linux":
+			return "Secret Service (secret-tool)"
+		case "windows":
+			return "Windows DPAPI"
+		}
+	}
+	return "config file"
+}
+
+// --- File-based storage (fallback) ---
+
+func loadCredentialsFile() (*credentials, error) {
 	path, err := credentialsPath()
 	if err != nil {
 		return nil, err
@@ -64,13 +138,12 @@ func loadCredentials() (*credentials, error) {
 
 	var creds credentials
 	if err := json.Unmarshal(data, &creds); err != nil {
-		return nil, fmt.Errorf("parsing credentials: %w", err)
+		return nil, fmt.Errorf("parsing credentials file: %w", err)
 	}
 	return &creds, nil
 }
 
-// saveCredentials writes OAuth credentials to disk.
-func saveCredentials(creds *credentials) error {
+func saveCredentialsFile(creds *credentials) error {
 	path, err := credentialsPath()
 	if err != nil {
 		return err
@@ -86,13 +159,12 @@ func saveCredentials(creds *credentials) error {
 	}
 
 	if err := os.WriteFile(path, data, 0600); err != nil {
-		return fmt.Errorf("writing credentials: %w", err)
+		return fmt.Errorf("writing credentials file: %w", err)
 	}
 	return nil
 }
 
-// deleteCredentials removes stored credentials from disk.
-func deleteCredentials() error {
+func deleteCredentialsFile() error {
 	path, err := credentialsPath()
 	if err != nil {
 		return err
@@ -225,10 +297,9 @@ func runLogin() error {
 		return fmt.Errorf("saving credentials: %w", err)
 	}
 
-	path, _ := credentialsPath()
 	fmt.Printf("\nLogged in successfully!\n")
 	fmt.Printf("  Workspace: %s\n", tokenResp.WorkspaceName)
-	fmt.Printf("  Credentials saved to: %s\n", path)
+	fmt.Printf("  Storage:   %s\n", credentialBackend())
 	return nil
 }
 
@@ -301,12 +372,11 @@ func runStatus() error {
 		return nil
 	}
 
-	path, _ := credentialsPath()
 	fmt.Println("Auth: logged in via OAuth")
 	if creds.WorkspaceName != "" {
 		fmt.Printf("  Workspace: %s\n", creds.WorkspaceName)
 	}
-	fmt.Printf("  Credentials: %s\n", path)
+	fmt.Printf("  Storage:   %s\n", credentialBackend())
 	return nil
 }
 
