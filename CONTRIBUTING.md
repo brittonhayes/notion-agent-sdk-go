@@ -1,6 +1,6 @@
 # Contributing
 
-Contributions are welcome. This project is released into the public domain under the [Unlicense](UNLICENSE), so your contributions will be too.
+Contributions are welcome. This project is licensed under the [MIT License](LICENSE), so your contributions will be too.
 
 ## Getting started
 

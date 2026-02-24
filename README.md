@@ -365,4 +365,4 @@ go run .
 
 ## License
 
-This is free and unencumbered software released into the public domain. See [UNLICENSE](UNLICENSE) for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
